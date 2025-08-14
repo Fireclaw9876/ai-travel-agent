@@ -51,113 +51,6 @@ def get_api_keys():
         traceback.print_exc()
         sys.exit(1) 
 
-# # Construct Flask app for user interface
-# app = Flask(__name__, template_folder='templates')
-# app.secret_key = os.getenv("SECRET_KEY", "bpSOP_\xc5r\xa2H\x15\xaa\x12\r8]\xb1\x02\x15\xfe\xfd\x9d\xf9\xf0\xdb\xcek")
-
-# # Make sure templates exist
-# template_path = os.path.join('templates', 'base.html')
-# print(f"Template path: {template_path}")
-# print(f"Template exists: {os.path.exists(template_path)}")
-
-# @app.route('/')
-# def home():   
-#     return render_template('base.html')
-
-# @app.route('/base', methods=['POST', 'GET'])
-# def base():
-#     if request.method == 'POST':
-#         try:
-#             # Get all form data first
-#             user_email = request.form.get('user_email')
-#             start_location = request.form.get('start_location')
-#             travel_location = request.form.get('travel_location')
-#             arrival_date_str = request.form.get('arrival_date')
-#             departure_date_str = request.form.get('departure_date')
-#             travel_class = request.form.get('travel_class')
-#             travel_preferences = request.form.get('travel_preferences')
-            
-#             # Required Fields
-#             required_fields = [
-#                 'user_email', 'start_location', 'travel_location', 
-#                 'arrival_date', 'departure_date', 'travel_class'
-#             ]
-            
-#             # Validate email
-#             if not user_email:
-#                 raise ValueError("Email is required")
-#             validate_email(user_email)
-            
-#             # Validate required fields
-#             for field in required_fields:
-#                 if not request.form.get(field):
-#                     raise ValueError(f"{field.replace('_', ' ').capitalize()} is required")
-            
-#             # Validate passenger counts
-#             passenger_adult_count = int(request.form.get('passenger_adult_count', 0))
-#             passenger_child_count = int(request.form.get('passenger_child_count', 0))
-            
-#             if passenger_adult_count < 1:
-#                 raise ValueError("At least one adult passenger is required")
-#             if passenger_child_count < 0:  # Children can be 0, but not negative
-#                 raise ValueError("Child count cannot be negative")
-            
-#             # Validate dates
-#             arrival_date = datetime.strptime(arrival_date_str, '%Y-%m-%d').date()
-#             departure_date = datetime.strptime(departure_date_str, '%Y-%m-%d').date()
-            
-#             if arrival_date >= departure_date:
-#                 raise ValueError("Arrival date must be before departure date")
-            
-#             if arrival_date < datetime.now().date():
-#                 raise ValueError("Arrival date cannot be in the past")
-            
-#             # Pass validation information through trip_info 
-#             trip_info = trip(
-#                 start_location, 
-#                 travel_location, 
-#                 passenger_adult_count, 
-#                 passenger_child_count, 
-#                 travel_class, 
-#                 arrival_date, 
-#                 departure_date, 
-#                 travel_preferences
-#             )
-            
-#             # Save trip_info to session
-#             session['trip_info'] = trip_info 
-             
-#             # Process the trip information
-#             return redirect(url_for('submitted'))
-            
-#         except EmailNotValidError as e: 
-#             flash("Invalid email address format", 'error')
-#         except ValueError as e:
-#             flash(str(e), 'error')
-#         except Exception as e:
-#             flash("An unexpected error occurred. Please try again.", 'error')
-#             # Log the actual error for debugging
-#             print(f"Unexpected error in base route: {e}")
-#         #  Error handling - render form again
-#         return render_template('base.html')
-    
-#     # GET request - show the form
-#     return render_template('base.html')
-
-# @app.route('/submitted')
-# def submitted():
-    
-#     return render_template('submitted.html')
-
-# # Error Handlers
-# @app.errorhandler(404)
-# def not_found_error(error):
-#     return render_template('404.html'), 404
-
-# @app.errorhandler(500)
-# def internal_error(error):
-#     return render_template('500.html'), 500
-
 def get_anthropic_plan(trip):
     # Validate input information
     if not all([trip.start_location, trip.travel_location, trip.arrival_date, trip.departure_date]):
@@ -366,6 +259,7 @@ def get_email_content(trip, result):
         - Departure Date: {trip.departure_date}
         - Travel Preferences: {trip.travel_preferences}
 
+        
         Itinerary:
         """
         # Initalize Dictionary for event details
@@ -432,44 +326,7 @@ def add_calendar_event(client, event):
         print(f"Error adding calendar event: {e}")
         traceback.print_exc()
         return None
-    
-def send_initial_email():
-    try:
-        print("Sending initial email to user...")
-        # Request access to the user's Gmail account
-        auth_response = client.tools.authorize(
-        tool_name="Gmail.SendEmail",
-        user_id=USER_ID,
-        ) 
 
-        if auth_response.status != "completed":
-            print(f"Click this link to authorize: {auth_response.url}")
-
-        # Wait for authorization
-        client.auth.wait_for_completion(auth_response)
-        print("Email authorization completed successfully.")
-        
-        tool_input = {
-            "subject" : "Welcome to Your Trip Planning Assistant", 
-            "body" : "Thank you for using our trip planning assistant! We will help you plan your trip step by step. Please provide the details of your trip, and we will get started. Please reply to this email with your trip details in the following format:\n\nDeparture Location: [Your Departure Location]\nArrival Location: [Your Arrival Location]\nNumber of Adults: [Number of Adults]\nNumber of Children: [Number of Children]\nTravel Class: [Economy/Premium/Business]\nArrival Date: [YYYY-MM-DD]\nDeparture Date: [YYYY-MM-DD]\nTravel Preferences: [Your Travel Preferences]",
-            "recipient": USER_ID,
-        }
-        
-        emails_response = client.tools.execute(
-            tool_name="Gmail.SendEmail",
-            input=tool_input,
-            user_id=USER_ID,
-        )
-        print("Email sent successfully")
-    except ValueError as ve:
-        print(f"ValueError: {ve}")
-        traceback.print_exc()
-        return None
-    except Exception as e:
-        print(f"Error sending email: {e}")
-        traceback.print_exc()
-        return None     
-        
 # Call the function to test
 if __name__ == "__main__":
     # Initialize Trip Details
@@ -506,4 +363,5 @@ if __name__ == "__main__":
     # Add a Calendar Event
     for event in result["itinerary"]:
         add_calendar_event(client, event)
-    print("Calendar event added successfully.")
+    
+    print("Trip planning process completed successfully.")
