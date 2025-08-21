@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash
 import os
 import sys
 from openai import OpenAI
-from datetime import datetime 
+from datetime import datetime, timedelta 
+import json
 from email_validator import validate_email, EmailNotValidError
 import anthropic
 import traceback
@@ -12,7 +13,8 @@ from dotenv import load_dotenv, find_dotenv
 
 # Make a trip class to hold trip information
 class trip:
-    def __init__(self, start_location, travel_location, passenger_adult_count, passenger_child_count, travel_class, arrival_date, departure_date, travel_preferences):
+    def __init__(self, user_email, start_location, travel_location, passenger_adult_count, passenger_child_count, travel_class, arrival_date, departure_date, travel_preferences):
+        self.user_email = user_email
         self.start_location = start_location
         self.travel_location = travel_location
         self.passenger_adult_count = passenger_adult_count
@@ -23,13 +25,13 @@ class trip:
         self.travel_preferences = travel_preferences
 
 # Initialize global variables
-trip_info = None
-client = None
+my_trip = None
 anthropic_client = None
 USER_ID = None
 
 # Load API key from encrypted .env file
 def get_api_keys():
+    global arcade_api_key, openai_api_key, anthropic_api_key, serp_api_key
     try:
         print("Loading environment variables...")
         env_path = find_dotenv()
@@ -51,6 +53,195 @@ def get_api_keys():
         traceback.print_exc()
         sys.exit(1) 
 
+# Construct Flask app for user interface
+app = Flask(__name__, template_folder='templates')
+app.secret_key = os.getenv("SECRET_KEY", "bpSOP_\xc5r\xa2H\x15\xaa\x12\r8]\xb1\x02\x15\xfe\xfd\x9d\xf9\xf0\xdb\xcek")
+
+# Make sure templates exist
+template_path = os.path.join('templates', 'welcome.html')
+print(f"Template path: {template_path}")
+print(f"Template exists: {os.path.exists(template_path)}")
+
+# Get API Keys
+arcade_api_key, openai_api_key, anthropic_api_key, serp_api_key = get_api_keys()
+
+@app.route('/')
+def home():
+    return render_template('welcome.html')
+
+@app.route('/planner', methods=['POST', 'GET'])
+def base():
+    global my_trip
+    if request.method == 'POST':
+        try:
+            # Get all form data first
+            user_email = request.form.get('user_email')
+            start_location = request.form.get('start_location')
+            travel_location = request.form.get('travel_location')
+            arrival_date_str = request.form.get('arrival_date')
+            departure_date_str = request.form.get('departure_date')
+            travel_class = request.form.get('travel_class')
+            travel_preferences = request.form.get('travel_preferences')
+            
+            # Required Fields
+            required_fields = [
+                'user_email', 'start_location', 'travel_location', 
+                'arrival_date', 'departure_date', 'travel_class'
+            ]
+
+            # Validate email
+            if not user_email:
+                flash("Email is required")
+                return render_template('planner.html')
+            validate_email(user_email)
+            
+            # Validating that the cities exist
+            if not validate_cities(start_location, travel_location):
+                flash("Please check that your location inputs are in fact cities and spelled correctly")
+                return render_template('planner.html')
+            # Validate required fields
+            for field in required_fields:
+                if not request.form.get(field):
+                    flash(f"{field.replace('_', ' ').capitalize()} is required")
+                    return render_template('planner.html')
+            
+            # Validate passenger counts
+            passenger_adult_count = int(request.form.get('passenger_adult_count', 0))
+            passenger_child_count = int(request.form.get('passenger_child_count', 0))
+            
+            if passenger_adult_count < 1:
+                flash("At least one adult passenger is required")
+                return render_template('planner.html')
+            if passenger_child_count < 0:  # Children can be 0, but not negative
+                flash("Child count cannot be negative")
+                return render_template('planner.html')
+            
+            # Validate dates
+            arrival_date = datetime.strptime(arrival_date_str, '%Y-%m-%d').date()
+            departure_date = datetime.strptime(departure_date_str, '%Y-%m-%d').date()
+            
+            if arrival_date >= departure_date:
+                flash("Arrival date must be before departure date")
+                return render_template('planner.html')
+            
+            if (departure_date - arrival_date) > timedelta(days=30):
+                flash("Stay cannot exceed 30 days") # limitation due to not over-running the AI
+                return render_template('planner.html')
+
+            if arrival_date < datetime.now().date():
+                flash("Arrival date cannot be in the past")
+                return render_template('planner.html')
+            
+            if not travel_preferences: # Empty scenario
+                travel_preferences = None
+
+            # Pass validation information  
+            my_trip = trip(
+                user_email,
+                start_location, 
+                travel_location, 
+                passenger_adult_count, 
+                passenger_child_count, 
+                travel_class, 
+                arrival_date, 
+                departure_date, 
+                travel_preferences
+            )
+            # Process the trip information
+            return redirect(url_for('loading'))
+        except EmailNotValidError as e: 
+            flash("Invalid email address format", 'error')
+        except ValueError as e:
+            flash(str(e), 'error')
+        except Exception as e:
+            flash("An unexpected error occurred. Please try again.", 'error')
+            # Log the actual error for debugging
+            print(f"Unexpected error in base route: {e}")
+        #  Error handling - render form again
+        return render_template('planner.html')
+    # GET request - show the form
+    return render_template('planner.html')
+
+@app.route('/loading')
+def loading():
+    if not my_trip: 
+        print('No Trip Validated')
+        return redirect(url_for('home'))
+    return render_template('loading.html')
+
+@app.route('/backend_processing')
+def backend_processing():
+    print("backend stuff")
+    process_backend()
+    return redirect(url_for('submitted'))
+
+@app.route('/submitted')
+def submitted():
+    try:
+        # Validating Information in terminal
+        print("trip info: ", my_trip)
+        print(f"Trip details: {my_trip.user_email}, {my_trip.start_location} -> {my_trip.travel_location}")
+        print(f"Dates: {my_trip.arrival_date} to {my_trip.departure_date}")
+        print(f"Passengers: {my_trip.passenger_adult_count} adults, {my_trip.passenger_child_count} children")
+
+        return render_template('submitted.html')
+    except Exception as e:
+        print(f"Error processing trip: {e}")
+        print(f"Error type: {type(e)}")
+        traceback.print_exc()
+        flash("An error occurred while processing your trip.", 'error')
+        return redirect(url_for('home'))
+
+# Error Handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500
+
+def process_backend():
+    global client, my_trip, anthropic_client, USER_ID
+    try:
+        client = Arcade() # Automatically finds the `ARCADE_API_KEY` env variable
+        print("Arcade client initialized successfully")
+        
+        # Pass a unique identifier for them (e.g. an email or user ID) to Arcade:
+        USER_ID = my_trip.user_email
+        print(f"User ID set to: {USER_ID}")
+
+        # Initialize Anthropic client
+        anthropic_client = anthropic.Client(
+            api_key=anthropic_api_key
+        )
+        print("Anthropic client initialized successfully")
+        
+        print("Starting the trip planning process...")
+
+        # Get the travel plan
+        print("Calling get_anthropic_plan...")
+        result = get_anthropic_plan(my_trip)
+        print(f"get_anthropic_plan returned: {type(result)}")
+        
+        if result:
+            print(f"Generated itinerary with {result['event_count']} events")
+            print("First few events:")
+            for i, event in enumerate(result["itinerary"][:3]):
+                print(f"  Event {i+1}: {event.get('event_name', 'No name')}")
+                
+            # Send the email with trip details
+            send_email(trip=my_trip, result=result)
+
+            # Add a Calendar Event
+            for event in result["itinerary"]:
+                add_calendar_event(client, event)
+            print("Calendar events added successfully.")
+    except Exception as e:
+        print(f"Error processing trip: {e}")
+        print(f"Error type: {type(e)}")
+        traceback.print_exc()
+
 def get_anthropic_plan(trip):
     # Validate input information
     if not all([trip.start_location, trip.travel_location, trip.arrival_date, trip.departure_date]):
@@ -60,33 +251,30 @@ def get_anthropic_plan(trip):
     tools = [{
         "name": "travel_events",
         "description": "A comprehensive list of events for the trip itinerary.",
-        # Define the input schema for the tool
         "input_schema": {
             "type": "object",
             "properties": {
                 "events": {
-                    # For multiple events, use an array of objects
                     "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
-                            # Specify the properties for each event
                             "event_name": {"type": "string"},
                             "event_time": {"type": "string"},
                             "event_price": {"type": "string"},
                             "event_address": {"type": "string"},
-                            "event_description": {"type": "string"},
+                            "event_description": {"type": "string"}
                         },
-                        # Required properties for each event
                         "required": ["event_name", "event_address", "event_time"],
-                        "additionalProperties": False,
+                        "additionalProperties": False
                     }
                 }
             },
             "required": ["events"],
-            "additionalProperties": False,
+            "additionalProperties": False
         }
     }]
+
     print("Tool schema defined successfully.")
     
     # Prompt for the Anthropic API
@@ -118,7 +306,7 @@ def get_anthropic_plan(trip):
         print("Generating travel plan using Anthropic API...")
         # Make the API call to Claude
         response = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-4-20250514",
             max_tokens=4000,
             temperature=0.7,
             system="You are an expert travel planner with years of experience creating unforgettable trips. You specialize in comprehensive, detailed itineraries that include practical information like dates, locations, and costs. Always use the provided tool to structure your response with well-organized itinerary data.",
@@ -142,7 +330,7 @@ def get_anthropic_plan(trip):
                     return {
                         "itinerary": itinerary_data["events"],
                         "event_count": len(itinerary_data["events"]),
-                        "model_used": "claude-3-5-sonnet-20241022"
+                        "model_used": "claude-sonnet-4-20250514"
                     }
             print("No valid tool use found in the response.")
             # If no tool use found, return text content if available
@@ -208,12 +396,15 @@ def get_flight_booking(client, trip, result):
         response = client.tools.execute(
         tool_name=arcade_tool_name,
         input=tool_input,
-        user_id=USER_ID,)   
+        user_id=USER_ID,)
+        
+        print(response)
+        
         return response
     else:
         return ValueError("No flight details found in the itinerary.")
 
-def sendEmail(trip, result):
+def send_email(trip, result):
     try:
         print("Sending email with trip details...")
         # Request access to the user's Gmail account
@@ -221,6 +412,13 @@ def sendEmail(trip, result):
         tool_name="Gmail.SendEmail",
         user_id=USER_ID,
         ) 
+
+        if auth_response.status != "completed":
+            print(f"Click this link to authorize: {auth_response.url}")
+
+        # Wait for authorization
+        client.auth.wait_for_completion(auth_response)
+        print("Email authorization completed successfully.")
         
         email_content = get_email_content(trip, result)
         
@@ -235,7 +433,7 @@ def sendEmail(trip, result):
             input=tool_input,
             user_id=USER_ID,
         )
-        print("Email sent successfully")
+        print("Email sent successfully:", emails_response.output.value)
     except ValueError as ve:
         print(f"ValueError: {ve}")
         traceback.print_exc()
@@ -250,42 +448,41 @@ def get_email_content(trip, result):
         print("Generating email content...")
         # Create the email content
         email_content = f"""
-        Hi,
+    Hi,
 
-        Here is your travel itinerary for your upcoming trip from {trip.start_location} to {trip.travel_location}.
-        
-        Trip Details:
-        - Arrival Date: {trip.arrival_date}
-        - Departure Date: {trip.departure_date}
-        - Travel Preferences: {trip.travel_preferences}
+    Here is your travel itinerary for your upcoming trip from {trip.start_location} to {trip.travel_location}.
+    
+    Trip Details:
+    - Arrival Date: {trip.arrival_date}
+    - Departure Date: {trip.departure_date}
+    - Travel Preferences: {trip.travel_preferences}
 
-        
-        Itinerary:
+    Itinerary:
+    """
+    # Initalize Dictionary for event details
+    event_details = []
+    # Populate event details with result from the API call
+    for event in result["itinerary"]:
+        event_details.append({
+            "name": event["event_name"],
+            "time": event["event_time"],
+            "price": event["event_price"],
+            "address": event["event_address"],
+            "description": event["event_description"]
+        })
+
+    # Format the event details into the email content
+    for i, event in enumerate(event_details, start=1):
+        email_content += f"""
+        Event {i}:
+        - Name: {event['name']}
+        - Time: {event['time']}
+        - Price: {event['price']}
+        - Address: {event['address']}
+        - Description: {event['description']}
         """
-        # Initalize Dictionary for event details
-        event_details = []
-        # Populate event details with result from the API call
-        for event in result["itinerary"]:
-            event_details.append({
-                "name": event["event_name"],
-                "time": event["event_time"],
-                "price": event["event_price"],
-                "address": event["event_address"],
-                "description": event["event_description"]
-            })
-
-        # Format the event details into the email content
-        for i, event in enumerate(event_details, start=1):
-            email_content += f"""
-            Event {i}:
-            - Name: {event['name']}
-            - Time: {event['time']}
-            - Price: {event['price']}
-            - Address: {event['address']}
-            - Description: {event['description']}
-            """
-        
-        email_content += "\n\nSafe travels!\n"
+    
+    email_content += "\n\nSafe travels!\n"
         
         print("Email content generated successfully.")
         return email_content
@@ -327,41 +524,30 @@ def add_calendar_event(client, event):
         traceback.print_exc()
         return None
 
+def validate_cities(from_city, to_city):
+    try:
+        with open('cities.json', 'r') as file:
+            data = json.load(file)
+            city_names = []
+            for city in data:
+                name = city.get('name')
+                city_names.append(name)
+        if from_city and to_city in city_names:
+            print("Valid Cities")
+            return True
+        else:
+            print("Invalid cities -> returning error")
+            return False
+    except FileNotFoundError:
+        print("Error: THe file 'data.json' was not found.")
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from file: {e}")
+    except Exception as e:
+        print(f"Unexpected error occured: {e}")
+        traceback.print_exc()
+        return None
+
 # Call the function to test
 if __name__ == "__main__":
-    # Initialize Trip Details
-    test_trip = trip(
-        # MUST BE FROM CITY TO CITY
-        "Houston",
-        "San Francisco",
-        1,
-        0,
-        "Economy",
-        "2025-08-10",
-        "2025-08-12",
-        "I want to go shopping and see the museums."
-    )
-    # Get API keys
-    arcade_api_key, openai_api_key, anthropic_api_key, serp_api_key = get_api_keys()
-    # Initialize Arcade client
-    client = Arcade() # Automatically finds the `ARCADE_API_KEY` env variable
-    # Pass a unique identifier for them (e.g. an email or user ID) to Arcade:
-    USER_ID = "kailichu14@gmail.com"
-    # Initialize Anthropic client
-    anthropic_client = anthropic.Client(
-        api_key=anthropic_api_key
-    )
-    # Send Email to User
-    print("Starting the trip planning process...")
-    send_initial_email()
-    
-    # Get the travel plan
-    result = get_anthropic_plan(test_trip)
-    
-    # Send the email with trip details
-    sendEmail(trip=test_trip, result=result)
-    # Add a Calendar Event
-    for event in result["itinerary"]:
-        add_calendar_event(client, event)
-    
-    print("Trip planning process completed successfully.")
+    # Set up Flask
+    app.run(debug=True, host="0.0.0.0", port=2800)
