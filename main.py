@@ -300,56 +300,26 @@ def get_anthropic_plan(trip):
     print("Tool schema defined successfully.")
     
     # Prompt specific to the Flight Travel Style (includes airport codes, plane times, etc.)
-    prompt_flight = f"""Generate a travel itinerary from {trip.start_location} to {trip.travel_location} for {trip.passenger_adult_count} adults and {trip.passenger_child_count} children between the dates of {trip.arrival_date} and {trip.departure_date}
-        Center the itinerary around their travel preferences as stated below: {trip.travel_preferences}
-             
-        First, think carefully step by step about what documents are needed to answer the query. If you are not sure about the information that you have, use your tools to read files and gather the relevant information. Do NOT guess or make up an answer.
-        If there's not enough information about the location to create a detailed itinerary, please explain why you cannot provide a complete answer.
-            
-        Then please provide the following details for each event:
-            1. Event Name: Add relevant emojis and brief descriptions for obscure venues (e.g., "MET (Metropolitan Museum of Art)")
-            2. Event Time: Specific date/time in ISO 8601 format, or explain if unknown
-            3. Event Price: Specific costs or explain if prices vary/unknown
-            4. Event Address: Complete address or explain if location varies/unknown  
-            5. Event Description: A detailed paragraph covering the event's significance, including reviews, cultural context, historical importance, or pop culture references
+    prompt_flight = f"""Create a travel itinerary for {trip.passenger_adult_count} adults from {trip.start_location} to {trip.travel_location} from {trip.arrival_date} to {trip.departure_date}.
 
-        These events MUST include: flights, hotels, activities, and restaurants for all three meals. Hotel location and flight times should be included in the itinerary. Affordable and delicious restaurants should be included in the itinerary with their addresses and hours of operation. I would also recommend parks, districts, and other places of interest that are not tourist traps.
-        Unless otherwise specified, the events should be in chronological order. There should at least be 3 events per day not including dinner, breakfast, and lunch. 
-        Search for bakeries, cafes, and restaurants to eat that are not tourist traps.
-        If there are any special events or festivals happening during the trip, include those as well.
-        
-        For the flights, include the IATA codes for the airports and format it this way: "Flight: SFO to JFK" for a flight from San Francisco to New York.
-        Focus on creating a balanced itinerary that matches their stated preferences while including practical information like addresses and timing.
-       
-        Please use the travel_events tool to structure your response with the itinerary data.
+        Travel style: {trip.travel_style}
+        Preferences: {trip.travel_preferences}
+
+        Include: flights, hotels, restaurants, and 2-3 activities per day.
+        Use the travel_events tool to structure your response. Would prefer one emoji per description.
         """
 
     # Prompt specific to the Driving Travel Style (includes gas stations or electrical vehicle charging stations)
-    prompt_road_trip = f"""Generate a road-trip style travel itinerary from {trip.start_location} to {trip.travel_location} for {trip.passenger_adult_count} adults and {trip.passenger_child_count} children between the dates of {trip.arrival_date} and {trip.departure_date}
-        Center the itinerary around their travel preferences as stated below: {trip.travel_preferences}
-             
-        First, think carefully step by step about what documents are needed to answer the query. If you are not sure about the information that you have, use your tools to read files and gather the relevant information. Do NOT guess or make up an answer.
-        If there's not enough information about the location to create a detailed itinerary, please explain why you cannot provide a complete answer.
-            
-        Then please provide the following details for each event:
-            1. Event Name: Add relevant emojis and brief descriptions for obscure venues (e.g., "MET (Metropolitan Museum of Art)")
-            2. Event Time: Specific date/time in ISO 8601 format, or explain if unknown
-            3. Event Price: Specific costs or explain if prices vary/unknown
-            4. Event Address: Complete address or explain if location varies/unknown  
-            5. Event Description: A detailed paragraph covering the event's significance, including reviews, cultural context, historical importance, or pop culture references
+    prompt_road_trip = f"""Create a travel itinerary for {trip.passenger_adult_count} adults from {trip.start_location} to {trip.travel_location} from {trip.arrival_date} to {trip.departure_date}.
 
-        These events MUST include: hotels, activities, and restaurants for all three meals. Affordable and delicious restaurants should be included in the itinerary with their addresses and hours of operation. I would also recommend parks, districts, and other places of interest that are not tourist traps.
-        Unless otherwise specified, the events should be in chronological order. There should at least be 3 events per day not including dinner, breakfast, and lunch. 
-        Search for bakeries, cafes, and restaurants to eat that are not tourist traps.
-        If there are any special events or festivals happening during the trip, include those as well.
-        
-        Attempt to include vehicle renewal stations (ie. gas stations or electrical vehicle charging stations for the user). This person prefers {trip.car_type} cars so add some of these renewal stations based on their mileage. 
-        For a gas car, include a gas station every 400 miles or so. For an electric car, include a charging station every 200 miles or so. If there are no gas stations, add an event that is a warning for that information. 
-        
-        Focus on creating a balanced itinerary that matches their stated preferences while including practical information like addresses and timing.
-       
-        Please use the travel_events tool to structure your response with the itinerary data.
+        Travel style: {trip.travel_style}
+        Car type: {trip.car_type}
+        Preferences: {trip.travel_preferences}
+
+        Include: gas stations or electrical vehicle charging stations, hotels, restaurants, and 2-3 activities per day. Would prefer one emoji per description. 
+        Use the travel_events tool to structure your response.
         """
+
     # Ensure responses adhere to JSON format
     try:
         # Specific prompts for each option 
@@ -508,7 +478,7 @@ Itinerary:
             - Description: {event['description']}
             """
 
-        email_content += "\n\nSafe travels!\n"
+        email_content += "\n\nWishing you all the best with your upcoming trip. Safe travels!\n"
         
         print("Email content generated successfully.")
         return email_content
@@ -581,4 +551,4 @@ def validate_cities(from_city, to_city):
 
 if __name__ == "__main__":
     # Set up Flask
-    app.run(debug=True, host="0.0.0.0", port=2800)
+    app.run(debug=True, host="0.0.0.0", port=2600)
