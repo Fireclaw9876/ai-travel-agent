@@ -37,11 +37,8 @@ if [ ! -d "templates" ]; then
     exit 1
 fi
 
-# Ensure city json file exists
-if [ ! -f "cities.json" ]; then
-    echo "Error: cities.json is missing. Please ensure it exists in the project root."
-    exit 1
-fi
+# Unzip city data and rename
+unzip -p cities.zip > cities.json
 
 echo "Setup completed successfully!"
 echo "Steps to start:"
