@@ -80,6 +80,13 @@ Commit your changes (git commit -m 'Add amazing feature')
 Push to the branch (git push origin feature/amazing-feature)
 Open a Pull Request
 
+## References
+
+HTML/Front-end Flask developed with Claude Code
+Cities database retrieved from [https://github.com/dr5hn/countries-states-cities-database
+]
+Thank you to everyone at Arcade who supported me throughout this project. 
+
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
