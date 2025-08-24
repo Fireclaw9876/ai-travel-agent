@@ -17,7 +17,7 @@ if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
 else
     echo "requirements.txt not found. Installing dependencies manually..."
-    pip install flask openai anthropic arcadepy python-dotenv email-validator
+    pip install arcadepy flask email_validator anthropic python-dotenv
 fi
 
 echo "Creating .env file template..."
@@ -42,10 +42,6 @@ if [ ! -f "cities.json" ]; then
     echo "Error: cities.json is missing. Please ensure it exists in the project root."
     exit 1
 fi
-
-# Login to Arcade
-echo "Logging in to Arcade..."
-arcade login
 
 echo "Setup completed successfully!"
 echo "Steps to start:"
