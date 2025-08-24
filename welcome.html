@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Planner Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 
+'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #4682B4 50%, #191970 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background elements */
+        .bg-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .floating-shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+
+        .floating-shape:nth-child(1) {
+            top: 10%;
+            left: 20%;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            animation-delay: -2s;
+        }
+
+        .floating-shape:nth-child(2) {
+            top: 70%;
+            left: 80%;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            animation-delay: -8s;
+        }
+
+        .floating-shape:nth-child(3) {
+            top: 40%;
+            left: 10%;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            animation-delay: -15s;
+        }
+
+        .floating-shape:nth-child(4) {
+            top: 20%;
+            left: 70%;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            animation-delay: -5s;
+        }
+
+        .floating-shape:nth-child(5) {
+            top: 60%;
+            left: 60%;
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 15px;
+            animation-delay: -12s;
+        }
+
+        .floating-shape:nth-child(6) {
+            top: 30%;
+            left: 40%;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 50%;
+            animation-delay: -18s;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+            100% { transform: translateY(0px) rotate(360deg); }
+        }
+
+        /* Main container */
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-content {
+            text-align: center;
+            color: white;
+            max-width: 800px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-8px) scale(1.1); }
+        }
+
+        /* Main title styling */
+        .main-title {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 2rem;
+            color: #bde9faff;
+        }
+
+        @keyframes titleGlow {
+            from {
+                filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            }
+            to {
+                filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.6));
+            }
+        }
+
+        /* Subtitle styling */
+        .subtitle {
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
+            margin-bottom: 3rem;
+            opacity: 0.99;
+            line-height: 1.7;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            font-weight: 400;
+            animation: fadeIn 1.5s ease-out 0.3s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 0.9;
+                transform: translateY(0);
+            }
+        }
+
+        /* Call to action button */
+        .cta-button {
+            padding: 1.2rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 1);
+            color: #399ac0ff;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: buttonPulse 2s ease-in-out infinite;
+            margin-top: 1rem;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 
+255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .cta-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .cta-button:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        @keyframes buttonPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
+        }
+
+        /* Glass morphism container */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4rem 3rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            animation: slideIn 1.2s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .glass-container {
+                padding: 2.5rem 1.5rem;
+                margin: 1rem;
+            }
+            
+            .travel-icons {
+                font-size: 2.5rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .subtitle {
+                margin-bottom: 2.5rem;
+            }
+            
+            .cta-button {
+                padding: 1rem 2.5rem;
+                font-size: 1.1rem;
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .glass-container {
+                padding: 2rem 1rem;
+            }
+            
+            .travel-icons {
+                font-size: 2rem;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background animation elements -->
+    <div class="bg-animation">
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+    </div>
+
+    <div class="container">
+        <div class="glass-container">
+            <div class="hero-content">         
+                <h1 class="main-title">Travel Planner Agent</h1>
+                
+                <p class="subtitle">
+                    Welcome to your very own personalized AI travel planner! We will create a perfect itinerary for each day of your trip with your preferences in mind.
+                </p>
+                
+                <a href="/planner" class="cta-button">
+                    Start your adventure here
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+
+        // Add button click animation
+        document.querySelector('.cta-button').addEventListener('click', function(e) {
+            // Create ripple effect
+            const ripple = document.createElement('div');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.style.position = 'absolute';
+            ripple.style.borderRadius = '50%';
+            ripple.style.background = 'rgba(255, 255, 255, 0.6)';
+            ripple.style.transform = 'scale(0)';
+            ripple.style.animation = 'ripple 0.6s linear';
+            ripple.style.pointerEvents = 'none';
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+
+
+        });
+
+        // Add ripple animation
+        const rippleStyle = document.createElement('style');
+        rippleStyle.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(rippleStyle);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                document.querySelector('.cta-button').click();
+            }
+        });
+    </script>
+</body>
+</html>
