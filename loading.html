@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0; url={{url_for('backend_processing')}}">
+    <title>Planning Your Adventure - Travel Planner Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #4682B4 50%, #191970 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background elements */
+        .bg-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .floating-shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+
+        .floating-shape:nth-child(1) {
+            top: 10%;
+            left: 20%;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            animation-delay: -2s;
+        }
+
+        .floating-shape:nth-child(2) {
+            top: 70%;
+            left: 80%;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            animation-delay: -8s;
+        }
+
+        .floating-shape:nth-child(3) {
+            top: 40%;
+            left: 10%;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            animation-delay: -15s;
+        }
+
+        .floating-shape:nth-child(4) {
+            top: 20%;
+            left: 70%;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            animation-delay: -5s;
+        }
+
+        .floating-shape:nth-child(5) {
+            top: 60%;
+            left: 60%;
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 15px;
+            animation-delay: -12s;
+        }
+
+        .floating-shape:nth-child(6) {
+            top: 30%;
+            left: 40%;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 50%;
+            animation-delay: -18s;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+            100% { transform: translateY(0px) rotate(360deg); }
+        }
+
+        /* Main container */
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Glass morphism container */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4rem 3rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            animation: slideIn 1.2s ease-out;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .hero-content {
+            color: white;
+        }
+
+        /* Travel icons animation */
+        .travel-icons {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Main title styling */
+        .main-title {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: #bde9faff;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Status message */
+        .status-message {
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            margin: 2rem 0;
+            opacity: 0.95;
+            line-height: 1.6;
+            font-weight: 400;
+            min-height: 50px;
+            animation: fadeIn 1.5s ease-out 0.3s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 0.95;
+                transform: translateY(0);
+            }
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin
+            margin-top: 1rem;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: pulse-dot 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        .loading-dot:nth-child(3) { animation-delay: 0s; }
+
+        @keyframes pulse-dot {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        /* Fun facts section */
+        .fun-facts {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2.5rem;
+            font-style: italic;
+            opacity: 0.85;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .fun-facts:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            color: #c8e6c9;
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .retry-button {
+            background: linear-gradient(45deg, #399ac0ff, #4682B4);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .retry-button:hover {
+            background: linear-gradient(45deg, #4682B4, #399ac0ff);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .retry-button:active {
+            transform: translateY(0);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .glass-container {
+                padding: 2.5rem 1.5rem;
+                margin: 1rem;
+            }
+            
+            .travel-icons {
+                font-size: 3rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .fun-facts {
+                padding: 1.5rem;
+                margin-top: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .glass-container {
+                padding: 2rem 1rem;
+            }
+            
+            .travel-icons {
+                font-size: 2.5rem;
+                gap: 0.5rem;
+            }
+            
+            .retry-button {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background animation elements -->
+    <div class="bg-animation">
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+    </div>
+
+    <div class="container">
+        <div class="glass-container">
+            <div class="hero-content">
+                <div class="travel-icons">
+                    <span id="status-emoji">✈️</span>
+                </div>
+                
+                <h1 class="main-title">Planning Your Adventure</h1>
+                
+                <div class="loading-container">
+                    <div class="loading-dots">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                </div>
+                
+                <div class="status-message" id="status-message">
+                    Starting your personalized travel planning experience...
+                </div>
+                
+                <div id="error-message" class="error hidden"></div>
+                <div id="success-message" class="success hidden"></div>
+                
+                <div class="fun-facts" id="fun-facts">
+                    💡 <span id="fun-fact-text">Did you know? We're using advanced AI to create a personalized itinerary tailored just for you!</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const jobId = '{{ job_id }}';
+        let pollCount = 0;
+        
+        const funFacts = [
+            "🧠 Our AI considers thousands of factors to create your perfect itinerary!",
+            "🌍 We're scanning the best local spots that tourists usually miss!",
+            "📅 Your calendar will automatically sync with your new adventure!",
+            "✉️ You'll receive a detailed email with all your trip information!",
+            "🎯 We're matching activities to your personal preferences!",
+            "🔍 Finding the perfect balance of must-sees and hidden gems!",
+            "⏰ Optimizing your schedule for the best possible experience!",
+            "🏨 Searching for the perfect accommodations for your stay!",
+            "🍽️ Discovering amazing local restaurants beyond tourist traps!",
+            "🎨 Including cultural experiences that match your interests!"
+        ];
+        
+        const statusEmojis = {
+            'pending': '⏳',
+            'running': '✈️',
+            'completed': '🎉',
+            'failed': '😅'
+        };
+        
+        function updateFunFact() {
+            const factElement = document.getElementById('fun-fact-text');
+            const randomFact = funFacts[Math.floor(Math.random() * funFacts.length)];
+            
+            // Fade out, change text, fade in
+            factElement.style.opacity = '0';
+            setTimeout(() => {
+                factElement.textContent = randomFact;
+                factElement.style.opacity = '1';
+            }, 300);
+        }
+        
+        function updateStatus() {
+            fetch(`/api/job_status/${jobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Get UI elements
+                    const statusMessage = document.getElementById('status-message');
+                    const errorMessage = document.getElementById('error-message');
+                    const successMessage = document.getElementById('success-message');
+                    const statusEmoji = document.getElementById('status-emoji');
+                    // Update status message and emoji
+                    statusMessage.textContent = data.message || 'Processing your amazing trip...';
+                    
+                    // Update emoji with animation
+                    const newEmoji = statusEmojis[data.status] || '✈️';
+                    if (statusEmoji.textContent !== newEmoji) {
+                        statusEmoji.style.transform = 'scale(0.8)';
+                        setTimeout(() => {
+                            statusEmoji.textContent = newEmoji;
+                            statusEmoji.style.transform = 'scale(1)';
+                        }, 150);
+                    }
+                    
+                    // Handle different states
+                    if (data.status === 'completed') {
+                        successMessage.innerHTML = `
+                            <strong>🎉 Your amazing trip is ready!</strong><br>
+                            Redirecting to your personalized itinerary in 3 seconds...
+                        `;
+                        successMessage.classList.remove('hidden');
+                        
+                        // Redirect after a moment
+                        setTimeout(() => {
+                            window.location.href = `/trip_results/${jobId}`;
+                        }, 3000);
+                        
+                    } else if (data.status === 'failed') {
+                        errorMessage.innerHTML = `
+                            <strong>Oops! Something went wrong:</strong><br>
+                            ${data.error || 'Unknown error occurred'}<br>
+                            <button class="retry-button" onclick="window.location.href='/planner'">
+                                ✨ Try Again
+                            </button>
+                        `;
+                        errorMessage.classList.remove('hidden');
+                        
+                    } else {
+                        // Continue polling
+                        setTimeout(updateStatus, 2000);
+                        
+                        // Update fun fact occasionally
+                        pollCount++;
+                        if (pollCount % 4 === 0) {
+                            updateFunFact();
+                        }
+                    }
+                });
+        }
+        
+        // Add smooth transitions to fact element
+        document.getElementById('fun-fact-text').style.transition = 'opacity 0.3s ease';
+        
+        // Start polling immediately
+        updateStatus();
+        
+        // Update fun facts every 8 seconds
+        setInterval(updateFunFact, 8000);
+        
+        // Add some interactive elements
+        document.getElementById('fun-facts').addEventListener('click', updateFunFact);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') {
+                updateFunFact();
+            }
+        });
+    </script>
+</body>
+</html>

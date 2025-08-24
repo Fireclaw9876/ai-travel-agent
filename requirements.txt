@@ -1,0 +1,5 @@
+arcadepy
+flask
+anthropic
+python-dotenv
+email-validator
