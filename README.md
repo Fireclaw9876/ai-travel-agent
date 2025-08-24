@@ -82,10 +82,9 @@ Open a Pull Request
 
 ## References
 
-HTML/Front-end Flask developed with Claude Code
-Cities database retrieved from [https://github.com/dr5hn/countries-states-cities-database
-]
-Thank you to everyone at Arcade who supported me throughout this project. 
+- HTML/Front-end Flask developed with Claude Code
+- Cities database retrieved from [https://github.com/dr5hn/countries-states-cities-database]
+- Thank you to everyone at Arcade who supported me throughout this project. 
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
