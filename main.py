@@ -11,6 +11,7 @@ import traceback
 from pathlib import Path
 from arcadepy import Arcade
 from dotenv import load_dotenv, find_dotenv
+from anthropic._exceptions import OverloadedError
 
 class trip:
     """ 
@@ -49,7 +50,7 @@ def get_api_keys():
         openai_api_key = os.getenv("OPENAI_API_KEY")
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
         # Check if the API keys are not None or empty
-        if not arcade_api_key or not openai_api_key or not anthropic_api_key:
+        if not arcade_api_key or not anthropic_api_key:
             raise ValueError("One or more API keys are missing. Please check your .env file.")
         print("Environment variables loaded successfully.")
         return arcade_api_key, anthropic_api_key
@@ -63,7 +64,7 @@ app = Flask(__name__, template_folder='templates')
 app.secret_key = os.getenv("SECRET_KEY", "bpSOP_\xc5r\xa2H\x15\xaa\x12\r8]\xb1\x02\x15\xfe\xfd\x9d\xf9\xf0\xdb\xcek")
 
 # Make sure templates exist
-template_path = os.path.join('templates', 'welcome.html')
+template_path = os.path.join('templates', '500.html')
 print(f"Template path: {template_path}")
 print(f"Template exists: {os.path.exists(template_path)}")
 
@@ -134,10 +135,10 @@ def base():
                 flash("Arrival date must be before departure date")
                 return render_template('planner.html')
             
-            # Limit the time frame for the trip to 2 weeks
-                # Don't want to overwhelm and overuse AI (considerations on budget and run-time)
-            if (departure_date - arrival_date) > timedelta(days=14):
-                flash("Stay cannot exceed 14 days")
+            # Limit the time frame for the trip to 5 days
+                # Cannot overwhelm AI (considerations on budget and run-time // error of correctly utilizing tools as well for longer trips)
+            if (departure_date - arrival_date) > timedelta(days=5):
+                flash("Stay cannot exceed 5 days!")
                 return render_template('planner.html')
 
             # Ensure the dates are valid -- travel dates must be in the present or future 
@@ -194,8 +195,13 @@ def backend_processing():
     This function executes all the backend which includes calling Anthropic's API and using Arcade to authorize the user's email and Google Calendar. 
     It then conducts multiple tool executions
     """
-    process_backend()
-    return redirect(url_for('submitted')) # Redirects to the submitted page once finished processing
+    try:
+        process_backend()
+        return redirect(url_for('submitted'))
+    except Exception as e:
+        print(f"Backend processing failed: {e}")
+        # Trigger the 500 error handler
+        return render_template('500.html'), 500
 
 @app.route('/submitted')
 def submitted():
@@ -247,6 +253,10 @@ def process_backend():
         result = get_anthropic_plan(MY_TRIP)
         print(f"get_anthropic_plan returned: {type(result)}")
         
+        # Redirect to Error
+        if result is None:
+            raise Exception("Failed to generate plan")
+
         # Show some event names on the Terminal
         if result:
             print(f"Generated itinerary with {result['event_count']} events")
@@ -263,6 +273,7 @@ def process_backend():
         print(f"Error processing trip: {e}")
         print(f"Error type: {type(e)}")
         traceback.print_exc()
+        raise e
 
 def get_anthropic_plan(trip):
     # Validate input information
@@ -305,8 +316,11 @@ def get_anthropic_plan(trip):
         Travel style: {trip.travel_style}
         Preferences: {trip.travel_preferences}
 
-        Include: flights, hotels, restaurants, and 2-3 activities per day.
-        Use the travel_events tool to structure your response. Would prefer one emoji per description.
+        These events MUST include: flights, hotels, fun activities, and delicious restaurants for all three meals. 
+        Would recommend parks, districts, and other places of interest that are not tourist traps.
+        Would prefer one emoji per event name.
+        Please put event time in ISO format. 
+        Use the travel_events tool to structure your response. 
         """
 
     # Prompt specific to the Driving Travel Style (includes gas stations or electrical vehicle charging stations)
@@ -316,7 +330,10 @@ def get_anthropic_plan(trip):
         Car type: {trip.car_type}
         Preferences: {trip.travel_preferences}
 
-        Include: gas stations or electrical vehicle charging stations, hotels, restaurants, and 2-3 activities per day. Would prefer one emoji per description. 
+        These events MUST include: gas stations or electrical vehicle charging stations depending on car type, hotels, fun activities, and delicious restaurants for all three meals. 
+        Would recommend parks, districts, and other places of interest that are not tourist traps.
+        Would prefer one emoji per event name. 
+        Please put event time in ISO format. 
         Use the travel_events tool to structure your response.
         """
 
@@ -350,7 +367,7 @@ def get_anthropic_plan(trip):
             tool_choice={"type": "tool", "name": "travel_events"}
         )
         print("Anthropic API call completed successfully.")
-        # Check type
+
         print(f"Response type: {type(response)}")
         print(f"Response content: {response.content}")
 
@@ -378,7 +395,7 @@ def get_anthropic_plan(trip):
                                 events = value
                                 print(f"Using '{key}' as events array")
                                 break
-    
+
                     return {
                         "itinerary": itinerary_data["events"],
                         "event_count": len(itinerary_data["events"]),
@@ -392,6 +409,9 @@ def get_anthropic_plan(trip):
                     text_content += content_block.text
             print("Text content from response:", text_content)
             return None
+    except OverloadedError:
+        print("Anthropic API is currently overloaded. Please try again in a few minutes.")
+        return None
     # Handle any exceptions that occur during the API call
     except Exception as e:
         print(f"Error in Anthropic API call: {e}")
@@ -551,4 +571,4 @@ def validate_cities(from_city, to_city):
 
 if __name__ == "__main__":
     # Set up Flask
-    app.run(debug=True, host="0.0.0.0", port=2600)
+    app.run(debug=True, host="0.0.0.0", port=2800) 
