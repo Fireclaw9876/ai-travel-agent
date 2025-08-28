@@ -72,14 +72,6 @@ Then, generate an Anthropic API key (https://docs.anthropic.com/en/api/admin-api
    For the first run, you'll need to authorize the application with Google through the Arcade.dev API. The link will be provided in the terminal.
 
 
-## Contributing
-
-Fork the repository
-Create a feature branch (git checkout -b feature/amazing-feature)
-Commit your changes (git commit -m 'Add amazing feature')
-Push to the branch (git push origin feature/amazing-feature)
-Open a Pull Request
-
 ## References
 
 - HTML/Front-end Flask developed with Claude Code
