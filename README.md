@@ -1,5 +1,5 @@
 ## AI Travel Agent
-Create a personalized and meomorable travel itinerary with detailed information that syncs directly to your Google Calendar. Best for vacations less than 2 weeks. It locally hosts a webpage for the user to input all the necessary information about the trip to then create the optimal trip. 
+Create a personalized and meomorable travel itinerary with detailed information that syncs directly to your Google Calendar. Works for vacations less than 5 days. It locally hosts a webpage for the user to input all the necessary information about the trip to then create the optimal trip. 
 
 ## Overview
 This AI travel agent powered by Arcade and Anthropic: 
